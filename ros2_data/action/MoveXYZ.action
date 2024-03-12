@@ -1,0 +1,8 @@
+float64 positionx
+float64 positiony
+float64 positionz
+float64 speed
+---
+string result
+---
+string feedback

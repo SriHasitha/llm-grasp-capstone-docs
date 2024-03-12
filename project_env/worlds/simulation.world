@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <!-- We use a custom world for the rrbot so that the camera angle is launched correctly -->
+
+  <world name="default">
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- Global light source -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <include>
+        <uri>model://table</uri>
+        <pose>0 0 -0.5 0 0 1.57</pose>
+    </include>
+
+    <include>
+      <uri>model://coke_can</uri>
+      <pose>0 0 0.6 0 0 0</pose>
+   </include>
+  </world>
+</sdf>
