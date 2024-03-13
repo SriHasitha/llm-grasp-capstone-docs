@@ -39,14 +39,15 @@ class MoveXYZWActionClient(Node):
     def get_result_callback(self, future):
         result = future.result().result
         self.get_logger().info('Result: {}'.format(result.result))
-        rclpy.shutdown()
+        return result
+        # rclpy.shutdown()
 
 def main(args=None):
     rclpy.init(args=args)
     client = MoveXYZWActionClient()
 
     pose_ready = {'positionx': 0.70, 'positiony': 0.30, 'positionz': 1.35,
-                    'yaw': -45.0, 'pitch': 45.0, 'roll': 180.0, 'speed': 1.0}
+                    'yaw': -45.0, 'pitch': 0.0, 'roll': 180.0, 'speed': 1.0}
     
     pose_spawn = {'positionx': 0.00, 'positiony': 0.00, 'positionz': 1.12,
                     'yaw': -90.0, 'pitch': -45.0, 'roll': -90.0, 'speed': 1.0}
