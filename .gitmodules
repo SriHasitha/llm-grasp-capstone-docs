@@ -1,0 +1,3 @@
+[submodule "realsense_ros_gazebo"]
+	path = realsense_ros_gazebo
+	url = https://github.com/nilseuropa/realsense_ros_gazebo.git
