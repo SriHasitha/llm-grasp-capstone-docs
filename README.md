@@ -11,6 +11,12 @@ mkdir -p ~/llm-grasping-panda/src
 cd ~/llm-grasping-panda/src
 git clone https://github.com/SriHasitha/llm-grasp-capstone-docs.git
 ```
+or
+```sh
+cd ~/llm-grasping-panda/src
+git clone git@github.com:SriHasitha/llm-grasp-capstone-docs.git
+```
+
 
 3. Build packages
 ```sh
