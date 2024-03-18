@@ -24,6 +24,11 @@ cd ~/llm-grasping-panda
 colcon build
 ```
 
+4. Source packages
+```sh
+source install/setup.bash
+```
+
 ### Launch Panda Gazebo Simulation Environment
 
 1. Launch only Gazebo sim:
