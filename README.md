@@ -10,6 +10,7 @@ mkdir -p ~/llm-grasping-panda/src
 ```sh
 cd ~/llm-grasping-panda/src
 git clone https://github.com/SriHasitha/llm-grasp-capstone-docs.git
+git clone https://github.com/nilseuropa/realsense_ros_gazebo.git
 ```
 or
 ```sh
