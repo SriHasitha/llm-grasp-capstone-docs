@@ -740,7 +740,7 @@ def main(args=None):
 
     EXISTS = False
     PR_NAME = PARAM_PROGRAM
-    filepath = os.path.join(os.path.expanduser('~'), 'dev_ws', 'src', 'ros2_RobotSimulation', 'ros2_execution', 'programs', PR_NAME + ".txt")
+    filepath = os.path.join(os.path.expanduser('~'), 'llm-grasping-panda', 'src', 'llm-grasp-capstone-docs', 'ros2_execution', 'programs', PR_NAME + ".txt")
     EXISTS = os.path.exists(filepath)
     if (EXISTS == True):
         print(PR_NAME + " file found! Executing program...")
