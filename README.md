@@ -10,12 +10,25 @@ mkdir -p ~/llm-grasping-panda/src
 ```sh
 cd ~/llm-grasping-panda/src
 git clone https://github.com/SriHasitha/llm-grasp-capstone-docs.git
+git clone -b humble https://github.com/nilseuropa/realsense_ros_gazebo.git
 ```
+or
+```sh
+cd ~/llm-grasping-panda/src
+git clone git@github.com:SriHasitha/llm-grasp-capstone-docs.git
+git clone -b humble https://github.com/nilseuropa/realsense_ros_gazebo.git
+```
+
 
 3. Build packages
 ```sh
 cd ~/llm-grasping-panda
 colcon build
+```
+
+4. Source packages
+```sh
+source install/setup.bash
 ```
 
 ### Launch Panda Gazebo Simulation Environment
