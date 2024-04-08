@@ -20,11 +20,12 @@ class GGCNNservice(Node):
         self.depth_sub = self.create_subscription(Image,'/camera/depth_raw',self.depth_callback,1)
         self.get_logger().info('Initialized subscribers')
         # init ggcnn service
-        self.srv = self.create_service(GraspPrediction,'grasp_pediction',self.grasp_prediction_callback)
+        self.srv = self.create_service(GraspPrediction,'grasp_prediction',self.grasp_prediction_callback)
         self.get_logger().info('Initialized service')
 
         # to check if depth image was received
         self.received = False
+        # self.depth = np.zeros((300,300))
 
     def rgb_callback(self,img_msg):
         self.rbg = cv_bridge.imgmsg_to_cv2(img_msg)
@@ -48,13 +49,13 @@ class GGCNNservice(Node):
         
         # construct response
         response.success = True
-        g = response.best_grasp
-        g.pose.position.x = []
-        g.pose.position.y = []
-        g.pose.position.z = []
-        g.pose.orientation = []
-        g.width = []
-        g.quality = []
+        # g = response.best_grasp
+        # g.pose.position.x = 0.0
+        # g.pose.position.y = 0.0
+        # g.pose.position.z = 0.0
+        # g.pose.orientation = 0.0
+        # g.width = 0.0
+        # g.quality = 0.0
 
         return response
 
