@@ -88,11 +88,11 @@ masks, boxes, phrases, logits = model.predict(image_pil, text_prompt)
 
 ## Examples
 
-![car.png](/assets/outputs/car.png)
+![car.png](/lang-segment-anything/assets/outputs/car.png)
 
-![kiwi.png](/assets/outputs/kiwi.png)
+![kiwi.png](/lang-segment-anything/assets/outputs/kiwi.png)
 
-![person.png](/assets/outputs/person.png)
+![person.png](/lang-segment-anything/assets/outputs/person.png)
 
 ## Roadmap
 
