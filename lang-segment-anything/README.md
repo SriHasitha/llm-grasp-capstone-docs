@@ -2,7 +2,7 @@
 
 Language Segment-Anything is an open-source project that combines the power of instance segmentation and text prompts to generate masks for specific objects in images. Built on the recently released Meta model, segment-anything, and the GroundingDINO detection model, it's an easy-to-use and effective tool for object detection and image segmentation.
 
-![person.png](/assets/outputs/person.png)
+![person.png](/lang-segment-anything/assets/outputs/person.png)
 
 ## Features
 
