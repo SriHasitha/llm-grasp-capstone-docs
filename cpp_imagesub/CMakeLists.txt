@@ -8,9 +8,11 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(cv_bridge REQUIRED)
 
 add_executable(image_subscriber src/image_subscriber.cpp)
-ament_target_dependencies(image_subscriber rclcpp sensor_msgs)
+ament_target_dependencies(image_subscriber rclcpp sensor_msgs image_transport cv_bridge)
   
 install(TARGETS
   image_subscriber
