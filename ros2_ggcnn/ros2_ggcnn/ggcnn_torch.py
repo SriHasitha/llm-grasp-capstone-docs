@@ -84,4 +84,4 @@ def predict(depth, process_depth=True, crop_size=300, out_size=300, depth_nan_ma
 
     points_out = np.clip(points_out, 0.0, 1.0-1e-3)
 
-    return points_out, ang_out, width_out, depth.squeeze()
+    return points_out, ang_out, width_out #, depth.squeeze()
