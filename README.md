@@ -58,3 +58,16 @@ Action client sends desired end-effector pose as goal to the /MoveXYZW action
 ```sh
 ros2 run move_panda move_panda_client
 ```
+### Run GGCNN Service
+
+Initialize the GGCNN Service
+
+```sh
+ros2 run ros2_ggcnn ggcnn_service
+```
+
+Call the GGCNN service to predict grasp pose
+
+```sh
+ros2 service call /grasp_prediction ggcnn_interface/srv/GraspPrediction
+``` 
