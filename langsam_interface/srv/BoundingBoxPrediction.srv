@@ -1,0 +1,7 @@
+# BoundingBoxPrediction.srv
+# Request
+sensor_msgs/Image image
+string prompt
+---
+# Response
+BoundingBoxes[] boxes
