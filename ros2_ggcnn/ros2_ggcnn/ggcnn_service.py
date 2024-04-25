@@ -8,6 +8,13 @@ from ros2_ggcnn.ggcnn_torch import process_depth_image,predict
 import numpy as np
 import cv2
 from cv_bridge import CvBridge
+import time
+
+from tf2_ros import TransformException
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+from geometry_msgs.msg import TransformStamped,Quaternion
+from scipy.spatial.transform import Rotation as R
 
 class GGCNNservice(Node):
     def __init__(self):
@@ -24,16 +31,20 @@ class GGCNNservice(Node):
         self.srv = self.create_service(GraspPrediction,'grasp_prediction',self.grasp_prediction_callback)
         self.get_logger().info('Initialized service')
 
+        # init transform listner
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
         # depth camera params
         self.K_depth = []
         self.depth_scale = 1000
         self.h_depth = 0
         self.w_depth = 0
-
-        # to check if depth image was received
+        # to check if msgs are received
         self.received_depth = False
         self.received_rgb = False
         self.received_depth_K = False
+        self.received_transformation = False
         # cv bridge to convert imgmsg to cv2img
         self.cv_bridge = CvBridge()
 
@@ -58,6 +69,22 @@ class GGCNNservice(Node):
             self.get_logger().info(f'Received Depth Camera Intrinsic Matrix:\n {self.K_depth}')
         self.received_depth_K = True
 
+    # function to obtain transformation between frames       
+    def tf_transformation(self,from_frame,to_frame):
+        self.time = rclpy.time.Time()
+        count = 0
+        while ( (not self.received_transformation) and (count < 10) ):
+            try:
+                transformation: TransformStamped = self.tf_buffer.lookup_transform(to_frame, from_frame, self.time)
+                self.get_logger().info(f'Received Transform: {transformation}')
+                self.received_transformation = True
+            except TransformException:
+                self.get_logger().info('Error: Unable to receive trasnform')
+                time.sleep(1)
+                continue
+            count += 1
+        return transformation
+
     def show_image(self,img,title):
         img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
         img = img.astype('uint8')
@@ -68,7 +95,7 @@ class GGCNNservice(Node):
         # Wait for the depth image to be received
         while not self.received_depth:
             self.get_logger().info('Waiting for depth image...')
-            rclpy.spin_once(self, timeout_sec=0.1)  # Briefly yield control to allow other callbacks to run
+            rclpy.spin_once(self, timeout_sec=1)  # Briefly yield control to allow other callbacks to run
 
         # crop params
         crop_size = 300
@@ -79,6 +106,9 @@ class GGCNNservice(Node):
         depth_crop = process_depth_image(depth,crop_size=crop_size,out_size=out_size,crop_y_offset=crop_offset)
         # show images
         self.show_image(depth,'Depth Image')
+        # self.get_logger().info('waiting to print cropped depth image')
+        # self.get_logger().info(f'cropped depth image: {self.depth_crop}')
+        # self.get_logger().info('waiting to print cropped depth image')
         self.show_image(depth_crop,'Cropped Depth Image')
 
         # predict grasp
@@ -110,22 +140,59 @@ class GGCNNservice(Node):
         fy = self.K_depth[4]
         cx = self.K_depth[2]
         cy = self.K_depth[5]
-        x = (max_pixel[1] - cx)/(fx) * point_depth  # meters
-        y = (max_pixel[0] - cy)/(fy) * point_depth  # meters
-        z = point_depth                             # meters
+        x_cam = (max_pixel[1] - cx)/(fx) * point_depth  # meters
+        y_cam = (max_pixel[0] - cy)/(fy) * point_depth  # meters
+        z_cam = -point_depth                            # meters
 
+        # Transformation mat of obj wrt camera frame
+        T_grasp_cam = np.array([[np.cos(ang), -np.sin(ang), 0 , x_cam],
+                              [np.sin(ang),  np.cos(ang), 0 , y_cam],
+                              [0          ,  0          , 1 , z_cam],
+                              [0          ,  0          , 0 , 1    ]])
 
-        # convert to 3d pose
-        best_grasp_pose = []
-        
+        camera_pose = self.tf_transformation('d435_depth_frame','base_link')
+        # camera position wrt frame frame
+        P_cam_world = np.array([camera_pose.transform.translation.x, camera_pose.transform.translation.y, camera_pose.transform.translation.z])
+        # camera rot mat wrt world frame
+        R_cam_world = R.as_matrix(R.from_quat([ camera_pose.transform.rotation.x,
+                                                camera_pose.transform.rotation.y,
+                                                camera_pose.transform.rotation.z,
+                                                camera_pose.transform.rotation.w]))
+        # transformation mat of cam wrt world frame
+        T_cam_world = np.hstack((R_cam_world,P_cam_world.reshape(-1,1)))
+        T_cam_world = np.vstack((T_cam_world,np.array([0,0,0,1])))
+
+        # transform grasp pose to world frame
+        T_grasp_world = T_grasp_cam @ T_cam_world
+        # extract pose
+        pos = T_grasp_world[:3,3]
+        self.get_logger().info(f'xyz in world frame: {pos}')
+        # calc quaternion from rot mat
+        rot = R.from_matrix(T_grasp_world[:3,:3])
+        matrix = rot.as_matrix()
+        # Calculate roll (x-axis rotation)
+        roll = np.arctan2(matrix[2, 1], matrix[2, 2])
+        # Calculate pitch (y-axis rotation)
+        pitch = -np.arcsin(matrix[2, 0])
+        # Calculate yaw (z-axis rotation)
+        yaw = np.arctan2(matrix[1, 0], matrix[0, 0])
+        self.get_logger().info(f'roll: {roll},pitch: {pitch}, yaw: {yaw}')
+        quat = rot.as_quat()
+        self.get_logger().info(f'quaternion; {quat}')
+
         # construct response
         response.success = True
+        quat_msg = Quaternion()
+        quat_msg.x = quat[0]
+        quat_msg.y = quat[1]
+        quat_msg.z = quat[2]
+        quat_msg.w = quat[3]
         g = response.best_grasp
-        g.pose.position.x = x
-        g.pose.position.y = y
-        g.pose.position.z = z.astype(float)
-        # g.pose.orientation = 0.0
-        # g.width = 0.0
+        g.pose.position.x = pos[0]
+        g.pose.position.y = pos[1]
+        g.pose.position.z = pos[2]
+        g.pose.orientation = quat_msg
+        g.width = width.astype(float)
         # g.quality = 0.0
 
         return response
