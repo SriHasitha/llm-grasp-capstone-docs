@@ -40,8 +40,13 @@ class LangSAMService(Node):
         # Prepare bounding box message
         response_boxes = []
         for box in boxes:
+            box = box.cpu().numpy().squeeze().astype(int)
+            print(box[0],box[1],box[2],box[3])
             bbox = BoundingBoxes()
-            bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax = box
+            bbox.xmin = box[0].astype(int)
+            bbox.ymin = box[1].astype(int)
+            bbox.xmax = box[2].astype(int)
+            bbox.ymax = box[3].astype(int)
             response_boxes.append(bbox)
         
         response.boxes = response_boxes
