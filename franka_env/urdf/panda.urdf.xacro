@@ -77,7 +77,7 @@
     </joint>
 
     
-    <xacro:include filename="/home/soham/llm-grasping-panda/src/realsense_ros_gazebo/xacro/depthcam.xacro"/>
+    <xacro:include filename="$(find realsense_ros_gazebo)/xacro/depthcam.xacro"/>
 
     <xacro:realsense_d435 sensor_name="d435" parent_link="end_effector_frame" rate="10">
       <origin rpy="0 0 0 " xyz="-0.075 0.0 0.030"/>
