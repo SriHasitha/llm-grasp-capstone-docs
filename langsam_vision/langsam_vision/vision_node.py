@@ -9,6 +9,7 @@ import torch
 from langsam_vision.lang_sam import LangSAM
 # Import the BoundingBoxes message definition
 from langsam_interface.msg import BoundingBoxes
+from langsam_vision.visualize import visualize_output
 
 class LangSAMService(Node):
     def __init__(self):
@@ -37,18 +38,25 @@ class LangSAMService(Node):
         text_prompt = request.prompt # Get the text prompt from the request
         masks, boxes, phrases, logits = self.model.predict(self.pil_image, text_prompt)
         
+        visualize_output(self.pil_image, masks, boxes, phrases, logits)
+
         # Prepare bounding box message
         response_boxes = []
         for box in boxes:
-            box = box.cpu().numpy().squeeze().astype(int)
-            print(box[0],box[1],box[2],box[3])
-            bbox = BoundingBoxes()
-            bbox.xmin = box[0].astype(int)
-            bbox.ymin = box[1].astype(int)
-            bbox.xmax = box[2].astype(int)
-            bbox.ymax = box[3].astype(int)
-            response_boxes.append(bbox)
-        
+            bbox = box.cpu().numpy().squeeze()
+            # print(f'bbox dtype before conversion: {bbox.dtype}')
+            
+            bounding_box = BoundingBoxes()
+            bounding_box.xmin = int(bbox[0])  # Convert to Python int
+            bounding_box.ymin = int(bbox[1])  # Convert to Python int
+            bounding_box.xmax = int(bbox[2])  # Convert to Python int
+            bounding_box.ymax = int(bbox[3])  # Convert to Python int
+            
+            # Debugging print statements to check the types
+            # print(f'Bounding box values and types: xmin {bounding_box.xmin} type {type(bounding_box.xmin)}')
+            
+            response_boxes.append(bounding_box)
+        self.get_logger().info('Response: SUCCESS')
         response.boxes = response_boxes
         return response
 

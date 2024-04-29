@@ -9,6 +9,8 @@ from std_msgs.msg import String
 
 from ros2_data.action import MoveXYZW, MoveG, MoveL, MoveXYZ
 from ros2_grasping.action import Attacher
+from langsam_interface.srv import BoundingBoxPrediction
+from ggcnn_interface.srv import GraspPrediction
 
 # Define GLOBAL VARIABLE -> RES:
 RES = "null"
@@ -175,31 +177,147 @@ class DetacherPub(Node):
         # Declare PUBLISHER:
         self.publisher_ = self.create_publisher(String, "ros2_Detach", 5) #(msgType, TopicName, QueueSize)
 
-# def getWaypoints(pose_start,pos_obj,pos_place):
+# LangSAM service client
+BOUNDING_BOX = None
+P_CHECK_LANGSAM = False
+class LangsamClient(Node):
+    def __init__(self):
+        super().__init__('langsam_client')
+        self.client = self.create_client(BoundingBoxPrediction, 'get_bounding_box')
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('LangSAM not available, waiting again...')
+        self.req = BoundingBoxPrediction.Request()
 
+    def call_service(self, prompt):
+        self.req.prompt = prompt
+        self.get_logger().info('Calling LangSAM service ...')
+        future = self.client.call_async(self.req)
+        future.add_done_callback(self.callback)
 
-# def getSequence(waypoints):
+    def callback(self, future):
+        global BOUNDING_BOX
+        global P_CHECK_LANGSAM
+        try:
+            response = future.result()
+            self.get_logger().info('Received bounding boxes')
+            BOUNDING_BOX = response
+            P_CHECK_LANGSAM = True
+            # return response.boxes
+        except Exception as e:
+            self.get_logger().info('LangSAM service call failed %r' % (e,))
+            # return None
 
+POSE = None
+P_CHECK_POSE = False
+# GGCNN service client
+class GGCNNclient(Node):
+    def __init__(self):
+        super().__init__('ggcnn_client')
+        self.client = self.create_client(GraspPrediction,'grasp_prediction')
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('GGCNN not available, waiting again...')
+        self.req = GraspPrediction.Request()
+
+    def call_service(self):
+        future = self.client.call_async(self.req)
+        self.get_logger().info('Calling GGCNN service ...')
+        future.add_done_callback(self.callback)
+
+    def callback(self,future):
+        global POSE
+        global P_CHECK_POSE
+        try:
+            response = future.result()
+            if response.success == True:
+                self.get_logger().info('Received predicted grasp pose')
+                POSE = response.best_grasp
+                P_CHECK_POSE = True
+            else:
+                self.get_logger().info('GGCNN failed to predict grasp pose')
+                POSE = None
+                P_CHECK_POSE = True
+        except Exception as e:
+            self.get_logger().info('GGCNN service call failed %r' % (e,))
+        
+# Input prompt as a ROS2 parameter
+PROMPT = "default"
+P_CHECK_PROMPT = False
+class promptPARAM(Node):
+    def __init__(self):
+        global PROMPT
+        global P_CHECK_PROMPT
+        super().__init__('param_node')
+
+        self.declare_parameter('prompt', "default")
+        PROMPT = self.get_parameter('prompt').get_parameter_value().string_value
+        if (PROMPT == "default"):
+            self.get_logger().info('Prompt was not given.')
+            exit()
+        else:    
+            self.get_logger().info('Prompt received: ' + PROMPT)
+        P_CHECK_PROMPT = True 
 
 def main(args=None):
     # init ros node
     rclpy.init(args=args)
     
+    # extract prompt from ROS2 params
+    global PROMPT
+    global P_CHECK_PROMPT
+
+    paramNode = promptPARAM()
+    while (P_CHECK_PROMPT==False):
+        rclpy.spin_once(paramNode)
+    paramNode.destroy_node()
+
     # init clients
     MoveG_client = MoveGclient()
     attach_client = AttacherClient()
     detacher_client = DetacherPub()
     MoveXYZW_client = MoveXYZWclient()
     MoveL_client = MoveLclient()
+    ggcnn_client = GGCNNclient()
+    langsam_client = LangsamClient()
     print("All clients initilaized...")
 
     time.sleep(1)
 
+    ################ Call LangSAM ################
+    global BOUNDING_BOX
+    global P_CHECK_LANGSAM
+    langsam_client.call_service(PROMPT)
+    while (P_CHECK_LANGSAM == False):
+        rclpy.spin_once(langsam_client)
+    if (BOUNDING_BOX == None):
+        print('Exiting')
+        exit()
+    else:
+        print(BOUNDING_BOX)       
+    langsam_client.destroy_node()
+
+    time.sleep(1)
+
+    ################ Call GGCNN #################
+    global POSE
+    global P_CHECK_POSE
+    ggcnn_client.call_service()
+    while(P_CHECK_POSE == False):
+        rclpy.spin_once(ggcnn_client)
+    if (POSE == None):
+        print('Exiting')
+        exit()
+    else:
+        print(POSE)
+    ggcnn_client.destroy_node()
+
+    time.sleep(1)
+
+    ############### Pick & Place ################ 
     # define poses 
     speed = 0.5
     # arm ready end-eff pose
-    pose_ready = {'positionx': 0.70, 'positiony': 0.00, 'positionz': 1.50,
-                    'yaw': -45.0, 'pitch': 0.0, 'roll': 180.0, 'speed': speed}
+    pose_ready = {'positionx': 0.70, 'positiony': 0.0, 'positionz': 1.5,
+                    'yaw': -45.0, 'pitch': 0.0, 'roll': 180.0, 'speed': speed} #roll: 180.0, pitch: 0.0, yaw: -45 x: 0.70, y: 0.00, z: 1.50
     
     # object pos
     pos_obj = {'positionx': 0.70, 'positiony': 0.30, 'positionz': 1.25, 'speed': speed}
