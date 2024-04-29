@@ -68,6 +68,9 @@ def load_yaml(package_name, file_path):
 # ========== **GENERATE LAUNCH DESCRIPTION** ========== #
 def generate_launch_description():
 
+    # joint_names = ['panda_joint1', 'panda_joint2', 'panda_joint3', 'panda_joint4', 'panda_joint5', 'panda_joint6', 'panda_joint7']
+    # joint_positions = [0.0, 0.0, 0.0, -2.0, 0.0, 0.436, 0.0]
+
 
     # *********************** Gazebo *********************** # 
     
@@ -166,7 +169,8 @@ def generate_launch_description():
     spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py',
                         arguments=['-topic', 'robot_description',
                                    '-entity', 'panda'],
-                        output='screen')
+                        output='screen'#[{'joint_names': joint_names, 'joint_positions': joint_positions}]
+    )
 
     # ***** STATIC TRANSFORM ***** #
     # NODE -> Static TF:
@@ -308,6 +312,20 @@ def generate_launch_description():
         output="screen",
         parameters=[robot_description, robot_description_semantic, kinematics_yaml, {"use_sim_time": True}, {"ROB_PARAM": 'panda_arm'}],
     )
+
+    # To spawn Panda in Ready2 pose: 
+    # ros2 action send_goal -f /MoveJs ros2_data/action/MoveJs "{goal: {joint1: 0.00, joint2: 0.00, joint3: 0.00, joint4: 0.00, joint5: 0.00, joint6: 0.00, joint7: 0.00}, speed: 1.0}" # (7-DOF)
+    spawn_panda = ExecuteProcess(
+        cmd=[[
+            'ros2 action send_goal -f ',
+            # turtlesim_ns,
+            '/MoveJs ',
+            'ros2_data/action/MoveJs ',
+            '"{goal: {joint1: 0.00, joint2: 0.00, joint3: 0.00, joint4: -114.592, joint5: 0.00, joint6: 24.98, joint7: 0.00}, speed: 1.0}"'
+        ]],
+        shell=True
+    )
+
     # MoveG ACTION:
     moveG_interface = Node(
         name="moveG_action",
@@ -380,11 +398,32 @@ def generate_launch_description():
         executable="attacher_action.py",
         output="screen",
     )
+
+    # LangSAM node:
+    LangSAM_node = Node(
+        name="langsam_service_node",
+        package="langsam_vision",
+        executable="vision_node",
+        output="screen",
+    )
+
+    # GGCNN node:
+    GGCNN_node = Node(
+        name="ggcnn_service_node",
+        package="ros2_ggcnn",
+        executable="ggcnn_service",
+        output="screen",
+    )
     
     return LaunchDescription(
         [
+            # LangSAM node:
+            # LangSAM_node,
+            # GGCNN node:
+            GGCNN_node,
             # Gazebo nodes:
             gazebo, 
+            spawn_panda,
             spawn_entity,
             # ROS2_CONTROL:
             static_tf,
@@ -444,6 +483,7 @@ def generate_launch_description():
                             period=2.0,
                             actions=[
                                 moveJ_interface,
+                                # spawn_panda,
                                 moveG_interface,
                                 moveL_interface,
                                 moveR_interface,
