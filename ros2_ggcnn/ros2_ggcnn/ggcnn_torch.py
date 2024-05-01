@@ -17,12 +17,25 @@ model.eval()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-def process_depth_image(depth, crop_size=300, out_size=300, return_mask=False, crop_y_offset=0):
+def process_depth_image(depth, x_c, y_c, crop_size=300, out_size=300, return_mask=False, crop_y_offset=0):
     imh, imw = depth.shape
-
+    print('height: ',imh,' width: ',imw)
+    # print(x_c,y_c)
     # Crop.
-    depth_crop = depth[(imh - crop_size) // 2 - crop_y_offset:(imh - crop_size) // 2 + crop_size - crop_y_offset,
-                       (imw - crop_size) // 2:(imw - crop_size) // 2 + crop_size]
+    # depth_crop = depth[(imh - crop_size) // 2 - crop_y_offset:(imh - crop_size) // 2 + crop_size - crop_y_offset,
+    #                    (imw - crop_size) // 2:(imw - crop_size) // 2 + crop_size]
+    # depth_crop = depth[(imh - crop_size) // 2 - x_c:(imh - crop_size) // 2 + crop_size - x_c,
+    #                    (imw - crop_size) // 2 - y_c:(imw - crop_size) // 2 + crop_size - y_c]
+    # depth_crop = depth[x_c - crop_size // 2 : x_c + crop_size // 2, y_c - crop_size // 2 : y_c + crop_size // 2]
+
+    # Calculate the bounding box coordinates for cropping
+    x1 = max(0, x_c - crop_size // 2)
+    y1 = max(0, y_c - crop_size // 2)
+    x2 = min(imh, x_c + crop_size // 2)
+    y2 = min(imw, y_c + crop_size // 2)
+
+    # Crop the image
+    depth_crop = depth[x1:x2, y1:y2]
 
     # Inpaint
     # OpenCV inpainting does weird things at the border.

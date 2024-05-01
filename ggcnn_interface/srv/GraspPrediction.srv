@@ -1,3 +1,6 @@
+#request
+ggcnn_interface/BoundingBoxes box
 ---
+#response
 bool success
 ggcnn_interface/Grasp best_grasp

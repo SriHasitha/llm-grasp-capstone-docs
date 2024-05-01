@@ -49,7 +49,7 @@ class GGCNNservice(Node):
         self.cv_bridge = CvBridge()
 
     def rgb_callback(self,img_msg):
-        self.rbg = self.cv_bridge.imgmsg_to_cv2(img_msg)
+        self.rgb = self.cv_bridge.imgmsg_to_cv2(img_msg)
         if not self.received_rgb:
             self.get_logger().info(f'Received RGB image: {img_msg.width}X{img_msg.height}')
         self.received_rgb = True
@@ -73,7 +73,8 @@ class GGCNNservice(Node):
     def tf_transformation(self,from_frame,to_frame):
         self.time = rclpy.time.Time()
         count = 0
-        while ( (not self.received_transformation) and (count < 10) ):
+        transformation = None
+        while ( (not self.received_transformation) and (count < 100) ):
             try:
                 transformation: TransformStamped = self.tf_buffer.lookup_transform(to_frame, from_frame, self.time)
                 self.get_logger().info(f'Received Transform: {transformation}')
@@ -88,28 +89,65 @@ class GGCNNservice(Node):
     def show_image(self,img,title):
         img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
         img = img.astype('uint8')
-        cv2.imshow(title, img)
-        cv2.waitKey() 
+        cv2.imwrite(title, img)
+        # cv2.imshow(title, img)
+        # cv2.waitKey() 
     
+    def crop_center(self,image,x_c,y_c):
+        # Get image dimensions
+        height, width = image.shape[:2]
+
+        # Zoom into the image 2x
+        zoomed_image = cv2.resize(image, (4*width, 4*height))
+
+        # Calculate crop dimensions
+        crop_size = 300
+        # y = (4*height - crop_size) // 2
+        # x = (4*width - crop_size) // 2
+        x1 = max(0, x_c - crop_size // 2)
+        y1 = max(0, y_c - crop_size // 2)
+        x2 = min(height, x_c + crop_size // 2)
+        y2 = min(width, y_c + crop_size // 2)
+
+        # Crop the image
+        cropped_image = zoomed_image[x1:x2, y1:y2]
+        # Crop the image
+        # cropped_image = zoomed_image[x_c - crop_size // 2 : x_c + crop_size // 2, y_c - crop_size // 2 : y_c + crop_size // 2]
+
+        # Resize the cropped image to 300x300
+        resized_image = cv2.resize(cropped_image, (300, 300))
+
+        return resized_image
+
+
     def grasp_prediction_callback(self,request,response):
         # Wait for the depth image to be received
         while not self.received_depth:
             self.get_logger().info('Waiting for depth image...')
             rclpy.spin_once(self, timeout_sec=1)  # Briefly yield control to allow other callbacks to run
 
+        # calc crop center
+        x_c = int((request.box.xmin + request.box.xmax)/2 * 2)
+        y_c = int((request.box.ymin + request.box.ymax)/2 * 1.5)
+        # print(request.box)
         # crop params
         crop_size = 300
         out_size = 300
         crop_offset = 0
         # crop depth image
         depth = self.depth.copy()
-        depth_crop = process_depth_image(depth,crop_size=crop_size,out_size=out_size,crop_y_offset=crop_offset)
+        depth_crop = process_depth_image(depth,x_c,y_c,crop_size=crop_size,out_size=out_size,crop_y_offset=crop_offset)
+        self.get_logger().info('Processed Depth Image')
+        # crop rgb image
+        cropped_rgb = self.crop_center(self.rgb,int(x_c/2),int(y_c/1.5))
         # show images
-        self.show_image(depth,'Depth Image')
+        self.show_image(depth,'depth_image.jpg')
         # self.get_logger().info('waiting to print cropped depth image')
         # self.get_logger().info(f'cropped depth image: {self.depth_crop}')
         # self.get_logger().info('waiting to print cropped depth image')
-        self.show_image(depth_crop,'Cropped Depth Image')
+        self.show_image(depth_crop,'cropped_depth_image.jpg')
+        self.show_image(self.rgb,'rgb_image.jpg')
+        self.show_image(cropped_rgb,'cropped_rgb_image.jpg')
 
         # predict grasp
         self.get_logger().info('Predicting Grasp Pose')
@@ -151,6 +189,12 @@ class GGCNNservice(Node):
                               [0          ,  0          , 0 , 1    ]])
 
         camera_pose = self.tf_transformation('d435_depth_frame','base_link')
+        
+        if camera_pose == None:
+            self.get_logger().info('Failed to obtain suitable pose')
+            response.success = False
+            return response
+        
         # camera position wrt frame frame
         P_cam_world = np.array([camera_pose.transform.translation.x, camera_pose.transform.translation.y, camera_pose.transform.translation.z])
         # camera rot mat wrt world frame

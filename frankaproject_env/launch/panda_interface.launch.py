@@ -284,24 +284,24 @@ def generate_launch_description():
     )
 
     # RVIZ:
-    load_RVIZfile = LaunchConfiguration("rviz_file")
-    rviz_base = os.path.join(get_package_share_directory("frankaproject_env"), "config")
-    rviz_full_config = os.path.join(rviz_base, "panda_moveit2.rviz")
-    rviz_node_full = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        arguments=["-d", rviz_full_config],
-        parameters=[
-            robot_description,
-            robot_description_semantic,
-            ompl_planning_pipeline_config,
-            kinematics_yaml,
-            {"use_sim_time": True}, 
-        ],
-        condition=UnlessCondition(load_RVIZfile),
-    )
+    # load_RVIZfile = LaunchConfiguration("rviz_file")
+    # rviz_base = os.path.join(get_package_share_directory("frankaproject_env"), "config")
+    # rviz_full_config = os.path.join(rviz_base, "panda_moveit2.rviz")
+    # rviz_node_full = Node(
+    #     package="rviz2",
+    #     executable="rviz2",
+    #     name="rviz2",
+    #     output="log",
+    #     arguments=["-d", rviz_full_config],
+    #     parameters=[
+    #         robot_description,
+    #         robot_description_semantic,
+    #         ompl_planning_pipeline_config,
+    #         kinematics_yaml,
+    #         {"use_sim_time": True}, 
+    #     ],
+    #     condition=UnlessCondition(load_RVIZfile),
+    # )
 
     # *********************** ROS2.0 Robot/End-Effector Actions/Triggers *********************** #
     # MoveJ ACTION:
@@ -420,7 +420,7 @@ def generate_launch_description():
             # LangSAM node:
             # LangSAM_node,
             # GGCNN node:
-            GGCNN_node,
+            # GGCNN_node,
             # Gazebo nodes:
             gazebo, 
             spawn_panda,
@@ -473,7 +473,7 @@ def generate_launch_description():
                             period=5.0,
                             actions=[
                                 rviz_arg,
-                                rviz_node_full,
+                                # rviz_node_full,
                                 run_move_group_node
                             ]
                         ),

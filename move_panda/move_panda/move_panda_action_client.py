@@ -218,7 +218,11 @@ class GGCNNclient(Node):
             self.get_logger().info('GGCNN not available, waiting again...')
         self.req = GraspPrediction.Request()
 
-    def call_service(self):
+    def call_service(self,bbox):
+        self.req.box.xmin = bbox.xmin
+        self.req.box.ymin = bbox.ymin
+        self.req.box.xmax = bbox.xmax
+        self.req.box.ymax = bbox.ymax
         future = self.client.call_async(self.req)
         self.get_logger().info('Calling GGCNN service ...')
         future.add_done_callback(self.callback)
@@ -300,7 +304,7 @@ def main(args=None):
     ################ Call GGCNN #################
     global POSE
     global P_CHECK_POSE
-    ggcnn_client.call_service()
+    ggcnn_client.call_service(BOUNDING_BOX.boxes[0])
     while(P_CHECK_POSE == False):
         rclpy.spin_once(ggcnn_client)
     if (POSE == None):
@@ -316,7 +320,7 @@ def main(args=None):
     # define poses 
     speed = 0.5
     # arm ready end-eff pose
-    pose_ready = {'positionx': 0.70, 'positiony': 0.0, 'positionz': 1.5,
+    pose_ready = {'positionx': POSE.pose.position.x, 'positiony': (POSE.pose.position.y), 'positionz': POSE.pose.position.z + 0.35,
                     'yaw': -45.0, 'pitch': 0.0, 'roll': 180.0, 'speed': speed} #roll: 180.0, pitch: 0.0, yaw: -45 x: 0.70, y: 0.00, z: 1.50
     
     # object pos
@@ -328,7 +332,7 @@ def main(args=None):
     # waypoints for pick and place
     # wp_pick0 = pos_obj.copy()
     # wp_pick0['positionz'] = 1.40
-    wp_pick0 = {'movex': 0.00, 'movey': 0.30, 'movez': -0.10, 'speed': speed}
+    wp_pick0 = {'movex': 0.00, 'movey': 0.00, 'movez': -0.10, 'speed': speed}
     
     # wp_pick = pos_obj.copy()
     # wp_pick['positionz'] = 1.235
