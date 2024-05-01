@@ -70,4 +70,22 @@ Call the GGCNN service to predict grasp pose
 
 ```sh
 ros2 service call /grasp_prediction ggcnn_interface/srv/GraspPrediction
-``` 
+```
+## Running Integrated Pipeline of ROS2/Gazebo + GGCNN + LangSAM for inference
+
+### Step 1: Run this service first
+```sh
+ros2 run langsam_vision vision_node
+```
+### Step 2: Launch gazebo environment
+```sh
+ros2 launch frankaproject_env panda_interface.launch.py
+```
+### Step 3: Initialize the GGCNN Service
+```sh
+ros2 run ros2_ggcnn ggcnn_service
+```
+### Step 4: Launch unified launch file to load all remaining services and send prompt to LangSAM to trigger prediction
+```sh
+ros2 run move_panda move_panda_client --ros-args -p prompt:'Pick up the green ball'
+```
