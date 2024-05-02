@@ -9,7 +9,16 @@ With an aging global population, the need for scalable and effective elderly car
 ## Approach
 We aim to integrate Language-Segment-Anything-Model(LangSAM) and Generative Grasp Convolutional Neural Network (GGCNN) into a ROS2 Service Client Framework.
 
-### Setup 
+### LangSAM
+The model is based on the combination of Segment Anything Model(SAM) and GroundingDINO. The goal of using this model was to have a text and image input generalized enough for facilitating communication about conveying intent for identifying region of interest within a scene.
+
+### GGCNN
+Given a depth image, and a region of interest input from LangSAM, GGCNN uses a cropped depth map as input to predict a grasp pose.
+
+### MoveIt2! and ROS2/Gazebo
+After receiving the grasp pose, the robot moves towards the object of interest and attempts to pick it up and place it at a target location.
+
+## Setup 
 
 1. Create ROS2 workspace
    
