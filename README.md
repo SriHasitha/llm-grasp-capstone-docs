@@ -8,6 +8,7 @@ With an aging global population, the need for scalable and effective elderly car
 
 ## Approach
 We aim to integrate Language-Segment-Anything-Model(LangSAM) and Generative Grasp Convolutional Neural Network (GGCNN) into a ROS2 Service Client Framework.
+
 ### Setup 
 
 1. Create ROS2 workspace
