@@ -1,3 +1,13 @@
+# ChatterArm: Large Language Model Augmented Vision-based Grasping​
+## RBE 594 Capstone Project
+### Authors : Sri Lakshmi Hasitha Bachimanchi, Dheeraj Bhogisetty, Soham Shantanu Aserkar​
+
+## Abstract
+
+With an aging global population, the need for scalable and effective elderly care solutions is becoming increasingly urgent. This project addresses the challenges of providing support to the elderly in everyday tasks such as fetching objects. The approach combines multi-modal large language model (LLM) with vision-based grasping technique and a robot manipulator to create an interactive robot. Our system allows for interaction through natural language text input, enabling the robot to recognize and manipulate objects with variations in shape and color. Results from simulation tests show that the manipulator can successfully execute tasks based on user commands, demonstrating its potential to operate effectively in real-world scenarios. The impact of this technology extends beyond individual assistance, with potential applications in inventory management, order fulfilment, and waste sorting.
+
+## Approach
+We aim to integrate Language-Segment-Anything-Model(LangSAM) and Generative Grasp Convolutional Neural Network (GGCNN) into a ROS2 Service Client Framework.
 ### Setup 
 
 1. Create ROS2 workspace
